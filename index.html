@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L'Affaire de Mecklenburgh Square</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="grain" aria-hidden="true"></div>
+
+<!-- ÉCRAN D'ACCUEIL -->
+<section id="accueil" class="ecran actif">
+  <div class="accueil-fond" style="background-image:url(photos/fiacre-brouillard.jpg)"></div>
+  <div class="accueil-contenu">
+    <p class="surtitre">Une enquête de Sherlock Holmes</p>
+    <h1>L'Affaire de<br>Mecklenburgh Square</h1>
+    <p class="date-titre">Londres, novembre 1895</p>
+    <div class="accueil-boutons">
+      <button class="btn principal" data-aller="regles">Lire les règles</button>
+      <button class="btn" id="btn-commencer">Commencer l'enquête</button>
+      <button class="btn discret" id="btn-reprendre" hidden>Reprendre l'enquête en cours</button>
+    </div>
+    <p class="conseil">Casque ou enceintes recommandés. Plein écran : touche F11 (ou ⌃⌘F sur Mac).</p>
+  </div>
+</section>
+
+<!-- RÈGLES -->
+<section id="regles" class="ecran">
+  <div class="page-papier">
+    <h2>Comment mener l'enquête</h2>
+    <p class="chapeau">Vous êtes Sherlock Holmes et le Dr Watson. Un homme est mort, un autre sera pendu si vous vous trompez. Vous avez environ une heure et demie.</p>
+
+    <h3>Le but</h3>
+    <p>Découvrir qui a tué Cornelius Marsh, comment, et pourquoi. Quand vous serez prêts, vous répondrez à six questions, vous désignerez un coupable, puis vous déciderez de son sort. Il n'y a qu'une vérité, mais deux façons de la servir.</p>
+
+    <h3>Se déplacer dans Londres</h3>
+    <p>La <b>carte</b> montre les adresses que vous connaissez. Pour aller ailleurs, écrivez dans « Se rendre à… » un nom ou une adresse trouvés dans vos documents ou dans l'<b>annuaire</b> de 1895. Si l'adresse mène quelque part, le fiacre vous y conduit. Chaque trajet est compté : Holmes, lui, se déplace peu et à bon escient.</p>
+
+    <h3>Les lieux et les témoins</h3>
+    <p>Dans chaque lieu, lisez la description, examinez ce qui peut l'être et interrogez les personnes présentes. Face à un témoin, vous pouvez l'<b>observer</b> (les détails que Holmes remarque), écouter sa <b>déposition</b>, et surtout lui <b>montrer une pièce</b> de votre dossier. Certains ne parlent que devant la bonne preuve.</p>
+
+    <h3>Le dossier</h3>
+    <p>Tout ce que vous ramassez va dans le <b>dossier</b> : lettres, journaux, registres, enregistrements. Ouvrez les documents, agrandissez-les, lisez-les vraiment. La loupe et le petit miroir de poche sont là pour ça. Rien n'est décoratif.</p>
+
+    <h3>Baker Street</h3>
+    <p>À Baker Street, vous trouverez la <b>table de chimie</b> de Holmes (pour analyser des échantillons), son <b>index</b> de coupures et de fiches (cherchez un nom, un mot) et sa bibliothèque.</p>
+
+    <h3>Le carnet</h3>
+    <p>Le <b>carnet</b> est à vous : notez-y vos hypothèses, les heures, les noms. Les résultats de laboratoire s'y inscrivent tout seuls. Un vrai carnet de papier à côté de l'écran fait aussi très bien l'affaire.</p>
+
+    <h3>Les indices</h3>
+    <p>Bloqués ? La rubrique <b>Indices</b> propose, pour chaque étape de l'enquête, trois coups de pouce de plus en plus précis, puis la solution de l'étape. Rien ne s'ouvre sans votre accord. Chaque indice coûte un peu de votre score final.</p>
+
+    <h3>À deux</h3>
+    <p>Partagez-vous le travail : l'un lit les documents à voix haute, l'autre tient le carnet et la carte. Échangez souvent. Holmes pense mieux quand Watson le contredit.</p>
+
+    <h3>Le son</h3>
+    <p>Chaque lieu a son ambiance. Certains documents sont des enregistrements : écoutez-les en entier, au calme, et plus d'une fois.</p>
+
+    <div class="regles-pied">
+      <button class="btn" data-aller="accueil">Retour</button>
+      <button class="btn principal" id="btn-commencer2">Commencer l'enquête</button>
+    </div>
+  </div>
+</section>
+
+<!-- PROLOGUE -->
+<section id="prologue" class="ecran">
+  <div class="prologue-photo"></div>
+  <div class="prologue-texte page-papier">
+    <p class="surtitre">Baker Street, samedi 16 novembre 1895, sept heures du matin</p>
+    <div id="prologue-contenu"></div>
+    <button class="btn principal" id="btn-jouer">Ouvrir la lettre</button>
+  </div>
+</section>
+
+<!-- JEU -->
+<section id="jeu" class="ecran">
+  <header class="barre">
+    <div class="barre-titre">L'Affaire de Mecklenburgh Square</div>
+    <div class="barre-infos">
+      <span id="chrono" title="Temps écoulé">0:00</span>
+      <span id="trajets" title="Trajets en fiacre">0 trajet</span>
+      <button class="icone" id="btn-son" title="Couper ou remettre le son">Son : oui</button>
+    </div>
+  </header>
+  <nav class="menu">
+    <button data-vue="carte" class="actif">Carte de Londres</button>
+    <button data-vue="lieu" id="menu-lieu">Lieu actuel</button>
+    <button data-vue="dossier">Dossier <span id="nb-docs"></span></button>
+    <button data-vue="temoins">Témoins</button>
+    <button data-vue="carnet">Carnet</button>
+    <button data-vue="annuaire">Annuaire</button>
+    <button data-vue="indices">Indices</button>
+    <button data-vue="conclure" class="conclure">Conclure</button>
+  </nav>
+  <main id="vues">
+    <div class="vue actif" id="vue-carte">
+      <div class="carte-outils">
+        <form id="form-aller" autocomplete="off">
+          <label for="aller">Se rendre à…</label>
+          <input id="aller" placeholder="un nom, une adresse" spellcheck="false">
+          <button class="btn principal">Prendre un fiacre</button>
+        </form>
+        <p id="aller-retour" class="retour" aria-live="polite"></p>
+      </div>
+      <div class="carte-cadre" id="carte-cadre">
+        <div class="carte" id="carte"><img src="photos/plan-1895.jpg" alt="Plan de Londres, Philip, 1895" draggable="false"><div id="epingles"></div></div>
+        <div class="carte-zoom"><button id="zoom-plus" aria-label="Zoomer">+</button><button id="zoom-moins" aria-label="Dézoomer">−</button></div>
+        <p class="carte-legende">Plan de poche George Philip &amp; Son, 1895</p>
+      </div>
+      <div class="lieux-connus" id="lieux-connus"></div>
+    </div>
+    <div class="vue" id="vue-lieu"></div>
+    <div class="vue" id="vue-dossier"></div>
+    <div class="vue" id="vue-temoins"></div>
+    <div class="vue" id="vue-carnet">
+      <h2>Carnet</h2>
+      <textarea id="notes" placeholder="Vos notes, vos hypothèses, les heures, les noms…"></textarea>
+      <h3>Résultats d'analyses</h3>
+      <div id="journal-labo" class="journal-labo"></div>
+    </div>
+    <div class="vue" id="vue-annuaire">
+      <h2>Post Office London Directory, 1895</h2>
+      <p class="aide">Extrait de l'annuaire de Kelly. Cherchez un nom, une profession ou une rue.</p>
+      <input id="annuaire-q" placeholder="Rechercher…" spellcheck="false">
+      <div id="annuaire-liste" class="annuaire"></div>
+    </div>
+    <div class="vue" id="vue-indices"></div>
+    <div class="vue" id="vue-conclure"></div>
+  </main>
+</section>
+
+<!-- VISIONNEUSE -->
+<div id="visionneuse" class="modale" hidden>
+  <div class="vis-barre">
+    <span id="vis-titre"></span>
+    <div class="vis-outils">
+      <button id="vis-moins" title="Réduire">−</button>
+      <button id="vis-plus" title="Agrandir">+</button>
+      <button id="vis-miroir" title="Regarder dans le miroir de poche">Miroir</button>
+      <button id="vis-fermer" title="Fermer">Fermer</button>
+    </div>
+  </div>
+  <div class="vis-zone" id="vis-zone"><img id="vis-img" alt="" draggable="false"></div>
+</div>
+
+<!-- FENÊTRE GÉNÉRIQUE -->
+<div id="fenetre" class="modale" hidden>
+  <div class="fenetre-boite page-papier">
+    <button class="fenetre-fermer" id="fenetre-fermer" aria-label="Fermer">×</button>
+    <div id="fenetre-contenu"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" aria-live="polite"></div>
+<audio id="amb-a" loop preload="auto"></audio>
+<audio id="amb-b" loop preload="auto"></audio>
+<audio id="voix" preload="auto"></audio>
+<script src="js/donnees.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
