@@ -46,19 +46,38 @@ Portraits : fonds de cartes de visite et cartes-album du Rijksmuseum d'Amsterdam
 ## Sons d'ambiance (Freesound, licence CC0)
 
 - [Horses Pavement Then Cobblestone.m4a](https://freesound.org/s/549882/) — guynoland
-- [🐎 Horse Carriage Sounds in Zakopane - Kuźnice | ASMR Ambience, Field Recording](https://freesound.org/s/841364/) — GirlWithSoundRecorder
 - [old horse drawn carriage drives past](https://freesound.org/s/631829/) — Garuda1982
-- [Horse and Carriage.mp3](https://freesound.org/s/388391/) — maadmacs
-- [Rue Tougma Marrakesh 5.1](https://freesound.org/s/520232/) — blaukreuz
-- [Paardengetrappel.001(13).wav](https://freesound.org/s/23500/) — kupper
-- [pferdekutsche und verkehrslärm.mp3](https://freesound.org/s/338334/) — Wanderklasse
 - [clatter of hooves.wav](https://freesound.org/s/204961/) — skitchscharff
-- [Malioboro140814.wav](https://freesound.org/s/245434/) — hendricbona
-- [horse-drawn carriage, bells, street.wav](https://freesound.org/s/419497/) — blukotek
-- [Reverse Bottle.aif](https://freesound.org/s/176571/) — Housed1J
-- [R18-59-Objects Rattle on Horse-Drawn Wagon.wav](https://freesound.org/s/480023/) — craigsmith
-- [G52-05-Ox Cart.wav](https://freesound.org/s/437078/) — craigsmith
 - [Vicotrian street muffin vendor.wav](https://freesound.org/s/556378/) — splatbot
+- [Keys Jingling by bwarpus99](https://freesound.org/s/443863/) — bwarpus99
+- [murmuring café by blaastaal](https://freesound.org/s/766655/) — blaastaal
+- [Ship Bell Single Ring by Sojan](https://freesound.org/s/353233/) — Sojan
+- [Ryuuzan_shop_door_bell00.wav by ryuuzan](https://freesound.org/s/192761/) — ryuuzan
+- [Berlin church bells by Sam-Mortley](https://freesound.org/s/807688/) — Sam-Mortley
+- [Printing press room.wav by mr101986](https://freesound.org/s/94713/) — mr101986
+- [Foghorns, Southampton Water, 3am by richwise](https://freesound.org/s/760454/) — richwise
+- [church bell ringing field recording with tascam dr-70d &amp; Rode NTG4+ by Garuda1982](https://freesound.org/s/426642/) — Garuda1982
+- [Long Distant Foghorn.aiff by Danjocross](https://freesound.org/s/507471/) — Danjocross
+- [Shop door bell.wav by 775noise](https://freesound.org/s/494565/) — 775noise
+- [old typewriter.WAV by monotraum](https://freesound.org/s/145534/) — monotraum
+- [English pub ambiance.m4a by Talitha5](https://freesound.org/s/690597/) — Talitha5
+- [key shaking, jingle by ittou](https://freesound.org/s/465462/) — ittou
+- [R30-18-Church Bell Chimes.wav by craigsmith](https://freesound.org/s/480015/) — craigsmith
+- [locking cell&#x27;s door2.wav by bruno.auzet](https://freesound.org/s/661642/) — bruno.auzet
+- [crowd by ondrosik](https://freesound.org/s/728642/) — ondrosik
+- [S32-10 Old printing press; no motor noise.wav by craigsmith](https://freesound.org/s/675545/) — craigsmith
+- [Ominous Grandfather Clock Pendulum Ticking by brktkrgll](https://freesound.org/s/856170/) — brktkrgll
+- [Fireplace.wav by OwennewO](https://freesound.org/s/549208/) — OwennewO
+- [Clock ticking by aceofspades22](https://freesound.org/s/837149/) — aceofspades22
+- [Fire crackling in fireplace by NomadApe](https://freesound.org/s/444920/) — NomadApe
+- [Old clock ticking by giddster](https://freesound.org/s/414469/) — giddster
+- [Fire crackles in the fireplace by pater.marek.op](https://freesound.org/s/545637/) — pater.marek.op
+- [clock ticking on a mantle.mp3 by mrrap4food](https://freesound.org/s/618985/) — mrrap4food
+- [Old clock tick-tock by Duasun](https://freesound.org/s/323626/) — Duasun
+- [Tick-Tock - Pendulum Family Clock by Vrymaa](https://freesound.org/s/797574/) — Vrymaa
+- [fire crackling, fireplace, BBQ by AlexanderChe](https://freesound.org/s/410404/) — AlexanderChe
+- [antique clock tick 2.wav by keweldog](https://freesound.org/s/223131/) — keweldog
+- [fire crackles by florianreichelt](https://freesound.org/s/563766/) — florianreichelt
 
 ## Images générées
 
