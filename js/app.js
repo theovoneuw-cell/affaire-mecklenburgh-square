@@ -11,7 +11,7 @@ const D = (() => {
 
 // ---------- État
 const CLE = "mecklenburgh-1895-v1";
-const neuf = () => ({ commence: false, temps: 0, connus: [], visites: {}, trajets: 0, docs: [], nouveaux: [], echant: [], temoins: [], vus: {}, indices: {}, notes: "", labo: [], lieu: null, piece: null, accusations: 0, fini: null, alerte90: false });
+const neuf = () => ({ origine: {}, commence: false, temps: 0, connus: [], visites: {}, trajets: 0, docs: [], nouveaux: [], echant: [], temoins: [], vus: {}, indices: {}, notes: "", labo: [], lieu: null, piece: null, accusations: 0, fini: null, alerte90: false });
 let S = neuf();
 try { const s = JSON.parse(localStorage.getItem(CLE) || "null"); if (s) S = Object.assign(neuf(), s); } catch (e) {}
 const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(S)); } catch (e) {} };
@@ -106,7 +106,9 @@ $$(".menu button").forEach(b => b.addEventListener("click", () => { vue(b.datase
 // ---------- Pièces du dossier
 function donner(ids, silencieux) {
   const neufs = (ids || []).filter(id => !S.docs.includes(id));
-  neufs.forEach(id => { S.docs.push(id); S.nouveaux.push(id); });
+  const ou = S.lieu ? D.lieux[S.lieu].nom + (S.piece && D.lieux[S.lieu].pieces ? " · " + D.lieux[S.lieu].pieces[S.piece].nom : "") : "Baker Street";
+  S.origine = S.origine || {};
+  neufs.forEach(id => { S.docs.push(id); S.nouveaux.push(id); S.origine[id] = ou; });
   if (neufs.length && !silencieux) toast("Au dossier : " + neufs.map(id => "<b>" + D.documents[id].titre + "</b>").join(", "));
   sauver(); majBarre(); return neufs;
 }
@@ -226,11 +228,11 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("#v
 function ficheTemoin(id, surPlace) {
   const p = D.personnages[id];
   if (!S.temoins.includes(id)) { S.temoins.push(id); sauver(); }
-  fenetre(`<div class="fiche-temoin"><figure class="portrait"><img src="${p.portrait}" alt="" onerror="this.style.visibility='hidden'"><figcaption>${p.nom}</figcaption></figure><div><h2>${p.nom}</h2><p class="role">${p.role}</p><div class="onglets"><button data-o="dep" class="actif">Déposition</button><button data-o="obs">Observer</button>${surPlace ? '<button data-o="mon">Montrer une pièce</button>' : ""}</div><div id="temoin-zone"></div></div></div>`, z => {
+  fenetre(`<div class="fiche-temoin"><figure class="portrait"><img src="${p.portrait}" alt="" onerror="this.style.visibility='hidden'"><figcaption>${p.nom}</figcaption></figure><div><h2>${p.nom}</h2><p class="role">${p.role}</p><div class="onglets"><button data-o="dep" class="actif">Déposition</button><button data-o="obs">Observer</button><button data-o="mon">Montrer une pièce</button></div><div id="temoin-zone"></div></div></div>`, z => {
     const zone = z.querySelector("#temoin-zone");
     const montrer = o => {
       z.querySelectorAll(".onglets button").forEach(b => b.classList.toggle("actif", b.dataset.o === o));
-      if (o === "dep") zone.innerHTML = p.depose + (surPlace ? "" : `<p class="role">Pour lui montrer une pièce, il faut retourner le voir.</p>`);
+      if (o === "dep") zone.innerHTML = p.depose;
       if (o === "obs") zone.innerHTML = "<p class='role'>Holmes l'examine en silence, puis vous glisse à l'oreille :</p><ul class='observations'>" + p.observer.map(x => `<li>${x}</li>`).join("") + "</ul>";
       if (o === "mon") {
         zone.innerHTML = "<p>Quelle pièce lui montrez-vous ?</p>";
@@ -251,7 +253,7 @@ function reagir(pid, did, zone) {
   if (r && r.donne) donner(r.donne);
 }
 function afficherTemoins() {
-  const v = $("#vue-temoins"); v.innerHTML = "<h2>Témoins rencontrés</h2><p class='aide'>Relisez leurs dépositions. Pour leur montrer une pièce, retournez les voir là où ils se trouvent.</p>";
+  const v = $("#vue-temoins"); v.innerHTML = "<h2>Témoins rencontrés</h2><p class='aide'>Relisez leurs dépositions, et montrez-leur une nouvelle pièce quand vous voulez : Holmes leur fait porter un mot par un des gamins de Baker Street.</p>";
   if (!S.temoins.length) { v.innerHTML += "<p>Personne encore.</p>"; return; }
   const c = el("div", { class: "temoins-grille" });
   S.temoins.forEach(id => { const p = D.personnages[id]; c.appendChild(el("button", { class: "case temoin", on: { click: () => ficheTemoin(id, false) } }, `<img src="${p.portrait}" alt="" onerror="this.style.visibility='hidden'"><div><b>${p.nom}</b><span>${p.role}</span></div>`)); });
@@ -260,14 +262,19 @@ function afficherTemoins() {
 
 // ---------- Dossier et visionneuse
 function afficherDossier() {
-  const v = $("#vue-dossier"); v.innerHTML = "<h2>Dossier</h2><p class='aide'>Cliquez sur une pièce pour l'ouvrir. Faites-la glisser pour la parcourir, zoomez avec + et −.</p>";
-  const g = el("div", { class: "dossier-grille" });
-  S.docs.forEach(id => {
-    const d = D.documents[id];
-    const vign = d.audio ? `<div class="vignette audio"><div class="cylindre"></div></div>` : `<div class="vignette"><img src="${d.fichier}" alt="" loading="lazy"></div>`;
-    g.appendChild(el("button", { class: "piece" + (S.nouveaux.includes(id) ? " nouveau" : ""), on: { click: () => ouvrirDoc(id) } }, vign + `<b>${d.titre}</b>`));
+  const v = $("#vue-dossier"); v.innerHTML = "<h2>Dossier</h2><p class='aide'>Toutes les pièces recueillies, rangées par lieu de découverte. Cliquez pour ouvrir ; dans la visionneuse, faites glisser pour parcourir, zoomez avec + et −, et essayez le miroir quand un texte semble à l'envers.</p>";
+  const groupes = {};
+  S.docs.forEach(id => { const o = (S.origine && S.origine[id]) || "Baker Street"; (groupes[o] = groupes[o] || []).push(id); });
+  Object.entries(groupes).forEach(([o, ids]) => {
+    v.appendChild(el("h3", { class: "groupe-dossier" }, o));
+    const g = el("div", { class: "dossier-grille" });
+    ids.forEach(id => {
+      const d = D.documents[id];
+      const vign = d.audio ? `<div class="vignette audio"><div class="cylindre"></div></div>` : `<div class="vignette"><img src="${d.fichier}" alt="" loading="lazy"></div>`;
+      g.appendChild(el("button", { class: "piece" + (S.nouveaux.includes(id) ? " nouveau" : ""), on: { click: () => ouvrirDoc(id) } }, vign + `<b>${d.titre}</b>`));
+    });
+    v.appendChild(g);
   });
-  v.appendChild(g);
 }
 let vis = { z: 1 };
 function ouvrirDoc(id) {
@@ -393,6 +400,13 @@ function afficherIndices() {
     else if (n === 3) nv.appendChild(el("button", { class: "solution", on: { click: () => { if (confirm("Révéler la solution de cette étape ?")) { S.indices[i] = 4; sauver(); afficherIndices(); } } } }, "Révéler la solution de l'étape"));
     b.appendChild(nv); v.appendChild(b);
   });
+  v.appendChild(el("div", { class: "piste" }, "<h3>Abandonner l'enquête</h3>"));
+  v.lastChild.appendChild(el("div", { class: "niveaux" })).appendChild(el("button", { class: "solution", on: { click: () => { if (confirm("Lire toute la solution ? L'enquête n'aura plus de secret.") && confirm("Vraiment ? Holmes vous regarde.")) { S.abandon = true; sauver(); afficherVerite(); } } } }, "Lire toute la solution"));
+}
+
+// ---------- Le fin mot de l'affaire
+function afficherVerite() {
+  fenetre(`<h2>Le fin mot de l'affaire</h2>${D.verite}`);
 }
 
 // ---------- Conclure
@@ -433,9 +447,10 @@ function afficherFin() {
   v.innerHTML = `<div class="epilogue page-papier"><h2>${ep.titre}</h2>${ep.texte}<hr><h3>Le dossier, point par point</h3>${D.deductions.map((d, i) => `<div class="verdict ${F.rep[i] === d.bonne ? "juste" : "faux"}"><b>${d.q}</b><br>${F.rep[i] === d.bonne ? "Juste" : "Faux. La réponse était : " + d.options[d.bonne]}. ${d.explique}</div>`).join("")}
   <h3>Votre enquête</h3><p class="score">${justes} déductions justes sur ${D.deductions.length} · ${S.trajets} trajets en fiacre (Holmes en aurait fait une dizaine) · ${nbInd} indice${nbInd > 1 ? "s" : ""}, ${nbSol} solution${nbSol > 1 ? "s" : ""} d'étape · ${S.accusations} fausse${S.accusations > 1 ? "s" : ""} accusation${S.accusations > 1 ? "s" : ""} · ${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}</p>
   <p class="score">Score : <b>${score} / 100</b>. ${rang}</p>
-  <p class="aide" style="color:#6b5a44">La solution complète et le récit de ce qui s'est vraiment passé se trouvent dans le dossier « SOLUTION » du dossier du jeu.</p>
+  <button class="btn principal" id="voir-verite">Lire ce qui s'est vraiment passé</button>
   <button class="btn" id="rejouer">Recommencer depuis le début</button></div>`;
   parler(ep.son);
+  v.querySelector("#voir-verite").addEventListener("click", afficherVerite);
   v.querySelector("#rejouer").addEventListener("click", () => { if (confirm("Effacer cette enquête et recommencer ?")) { S = neuf(); sauver(); location.reload(); } });
 }
 })();
