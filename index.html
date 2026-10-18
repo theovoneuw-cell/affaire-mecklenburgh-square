@@ -21,7 +21,8 @@
       <button class="btn" id="btn-commencer">Commencer l'enquête</button>
       <button class="btn discret" id="btn-reprendre" hidden>Reprendre l'enquête en cours</button>
     </div>
-    <p class="conseil">Casque ou enceintes recommandés. Plein écran : touche F11 (ou ⌃⌘F sur Mac).</p>
+    <p class="conseil">À jouer sur un ordinateur, avec un casque ou des enceintes. Plein écran : F11 (⌃⌘F sur Mac).</p>
+    <p class="petit-ecran">Cette enquête se joue sur un ordinateur : l'écran de ce téléphone est trop petit pour lire les documents.</p>
   </div>
 </section>
 
@@ -79,14 +80,20 @@
 <section id="jeu" class="ecran">
   <header class="barre">
     <div class="barre-titre">L'Affaire de Mecklenburgh Square</div>
+    <form id="form-aller" autocomplete="off">
+      <label for="aller">Se rendre à</label>
+      <input id="aller" placeholder="un nom, une adresse" spellcheck="false">
+      <button class="btn principal">Prendre un fiacre</button>
+    </form>
     <div class="barre-infos">
       <span id="chrono" title="Temps écoulé">0:00</span>
       <span id="trajets" title="Trajets en fiacre">0 trajet</span>
-      <button class="icone" id="btn-son" title="Couper ou remettre le son">Son : oui</button>
+      <button class="icone" id="btn-regles" title="Relire les règles">Règles</button>
+      <button class="icone" id="btn-son" title="Couper ou remettre le son" aria-pressed="true">Son activé</button>
     </div>
   </header>
   <nav class="menu">
-    <button data-vue="carte" class="actif">Carte de Londres</button>
+    <button data-vue="carte" class="actif" title="Touche 1">Carte de Londres</button>
     <button data-vue="lieu" id="menu-lieu">Lieu actuel</button>
     <button data-vue="dossier">Dossier <span id="nb-docs"></span></button>
     <button data-vue="temoins">Témoins</button>
@@ -97,14 +104,6 @@
   </nav>
   <main id="vues">
     <div class="vue actif" id="vue-carte">
-      <div class="carte-outils">
-        <form id="form-aller" autocomplete="off">
-          <label for="aller">Se rendre à…</label>
-          <input id="aller" placeholder="un nom, une adresse" spellcheck="false">
-          <button class="btn principal">Prendre un fiacre</button>
-        </form>
-        <p id="aller-retour" class="retour" aria-live="polite"></p>
-      </div>
       <div class="carte-cadre" id="carte-cadre">
         <div class="carte" id="carte"><img src="photos/plan-1895.jpg" alt="Plan de Londres, Philip, 1895" draggable="false"><div id="epingles"></div></div>
         <div class="carte-zoom"><button id="zoom-plus" aria-label="Zoomer">+</button><button id="zoom-moins" aria-label="Dézoomer">−</button></div>
@@ -133,13 +132,16 @@
 </section>
 
 <!-- VISIONNEUSE -->
-<div id="visionneuse" class="modale" hidden>
+<div id="visionneuse" class="modale" hidden role="dialog" aria-modal="true" aria-labelledby="vis-titre">
   <div class="vis-barre">
     <span id="vis-titre"></span>
     <div class="vis-outils">
-      <button id="vis-moins" title="Réduire">−</button>
-      <button id="vis-plus" title="Agrandir">+</button>
-      <button id="vis-miroir" title="Regarder dans le miroir de poche">Miroir</button>
+      <span class="vis-aide">Glisser pour parcourir · Ctrl + molette ou + / − pour zoomer</span>
+      <button id="vis-moins" title="Réduire (touche −)" aria-label="Réduire">−</button>
+      <span id="vis-pc" class="vis-pc">100 %</span>
+      <button id="vis-plus" title="Agrandir (touche +)" aria-label="Agrandir">+</button>
+      <button id="vis-ajuster" title="Ajuster à la fenêtre">Ajuster</button>
+      <button id="vis-miroir" title="Regarder dans le miroir de poche (touche M)" aria-pressed="false">Miroir</button>
       <button id="vis-fermer" title="Fermer">Fermer</button>
     </div>
   </div>
@@ -147,7 +149,7 @@
 </div>
 
 <!-- FENÊTRE GÉNÉRIQUE -->
-<div id="fenetre" class="modale" hidden>
+<div id="fenetre" class="modale" hidden role="dialog" aria-modal="true" aria-labelledby="fenetre-titre">
   <div class="fenetre-boite page-papier">
     <button class="fenetre-fermer" id="fenetre-fermer" aria-label="Fermer">×</button>
     <div id="fenetre-contenu"></div>

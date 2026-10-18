@@ -21,7 +21,23 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const el = (tag, attrs = {}, html = "") => { const e = document.createElement(tag); for (const k in attrs) { if (k === "on") for (const ev in attrs.on) e.addEventListener(ev, attrs.on[ev]); else if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]); } if (html) e.innerHTML = html; return e; };
 const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’']/g, " ").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-function toast(t) { const e = $("#toast"); e.innerHTML = t; e.classList.add("vu"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove("vu"), 4200); }
+function toast(t) {
+  const boite = $("#toast"), ligne = el("div", { class: "toast-ligne" }, t);
+  boite.appendChild(ligne); while (boite.children.length > 3) boite.firstChild.remove();
+  requestAnimationFrame(() => ligne.classList.add("vu"));
+  setTimeout(() => { ligne.classList.remove("vu"); setTimeout(() => ligne.remove(), 400); }, 5000);
+}
+
+// ---------- Fenêtre de confirmation dans l'univers du jeu
+function demander(texte, oui = "Oui", non = "Annuler") {
+  return new Promise(res => {
+    fenetre(`<p class="lieu-texte" style="margin-top:10px">${texte}</p><div class="regles-pied"><button class="btn" id="dem-non">${non}</button><button class="btn principal" id="dem-oui">${oui}</button></div>`, z => {
+      z.querySelector("#dem-oui").addEventListener("click", () => { fermerFenetre(); res(true); });
+      z.querySelector("#dem-non").addEventListener("click", () => { fermerFenetre(); res(false); });
+      z.querySelector("#dem-oui").focus();
+    });
+  });
+}
 
 // ---------- Son
 let sonActif = true; try { sonActif = localStorage.getItem(CLE + "-son") !== "non"; } catch (e) {}
@@ -47,7 +63,7 @@ function parler(src) {
 }
 voix.addEventListener("ended", () => { if (sonActif) fondu(ambCourante, .55, 1500); });
 function majSon() {
-  $("#btn-son").textContent = "Son : " + (sonActif ? "oui" : "non");
+  $("#btn-son").textContent = sonActif ? "Son activé" : "Son coupé"; $("#btn-son").setAttribute("aria-pressed", sonActif);
   if (!sonActif) { [ambA, ambB, voix].forEach(a => a.pause()); }
   else if (ambCourante.src) { ambCourante.play().catch(() => {}); fondu(ambCourante, .55, 800); }
 }
@@ -58,8 +74,8 @@ function ecran(id) { $$(".ecran").forEach(e => e.classList.toggle("actif", e.id 
 $$("[data-aller]").forEach(b => b.addEventListener("click", () => ecran(b.dataset.aller)));
 if (S.commence) $("#btn-reprendre").hidden = false;
 
-function commencer() {
-  if (S.commence && !confirm("Une enquête est déjà en cours. Tout effacer et recommencer ?")) return;
+async function commencer() {
+  if (S.commence && !(await demander("Une enquête est déjà en cours. Tout effacer et recommencer depuis le début ?", "Tout recommencer"))) return;
   S = neuf(); sauver();
   ecran("prologue");
   $(".prologue-photo").style.backgroundImage = `url(${D.prologue.photo})`;
@@ -74,6 +90,10 @@ $("#btn-jouer").addEventListener("click", () => {
   voix.pause(); entrerJeu(); ouvrirDoc("d01");
 });
 $("#btn-reprendre").addEventListener("click", () => entrerJeu());
+$("#btn-regles").addEventListener("click", () => {
+  const r = $("#regles .page-papier").cloneNode(true); r.querySelector(".regles-pied").remove();
+  fenetre(r.innerHTML);
+});
 
 function entrerJeu() {
   ecran("jeu"); majSon(); majBarre(); dessinerCarte(); vue(S.lieu ? "lieu" : "carte");
@@ -91,7 +111,7 @@ function majBarre() {
   const m = Math.floor(S.temps / 60), h = Math.floor(m / 60);
   $("#chrono").textContent = (h ? h + " h " + String(m % 60).padStart(2, "0") : m + " min") + " / 1 h 30";
   $("#trajets").textContent = S.trajets + (S.trajets > 1 ? " trajets" : " trajet");
-  const n = S.nouveaux.length; $("#nb-docs").textContent = "(" + S.docs.length + (n ? ", " + n + " nouv." : "") + ")";
+  const n = S.nouveaux.length; $("#nb-docs").textContent = "· " + S.docs.length + (n ? " (" + n + (n > 1 ? " nouvelles)" : " nouvelle)") : "");
   $("#menu-lieu").textContent = S.lieu ? D.lieux[S.lieu].nom : "Lieu actuel";
 }
 
@@ -99,9 +119,15 @@ function majBarre() {
 function vue(id) {
   $$(".menu button").forEach(b => b.classList.toggle("actif", b.dataset.vue === id));
   $$(".vue").forEach(v => v.classList.toggle("actif", v.id === "vue-" + id));
+  if (window.innerWidth < 700) window.scrollTo(0, 0);
   ({ dossier: afficherDossier, temoins: afficherTemoins, carnet: afficherCarnet, annuaire: afficherAnnuaire, indices: afficherIndices, conclure: afficherConclure, carte: dessinerCarte })[id]?.();
 }
 $$(".menu button").forEach(b => b.addEventListener("click", () => { vue(b.dataset.vue); if (b.dataset.vue === "lieu") afficherLieu(false); }));
+document.addEventListener("keydown", e => {
+  if (!$("#jeu").classList.contains("actif") || !$("#fenetre").hidden || !$("#visionneuse").hidden) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+  const b = $$(".menu button")[+e.key - 1]; if (b) { e.preventDefault(); b.click(); }
+});
 
 // ---------- Pièces du dossier
 function donner(ids, silencieux) {
@@ -137,28 +163,31 @@ function dessinerCarte() {
   const ep = $("#epingles"); ep.innerHTML = "";
   S.connus.forEach(id => {
     const l = D.lieux[id];
-    const b = el("button", { class: "epingle" + (id === S.lieu ? " ici" : S.visites[id] ? " visite" : ""), style: `left:${l.x}%;top:${l.y}%`, "aria-label": l.nom, on: { click: () => allerA(id) } }, `<span class="nom">${l.nom}</span><span class="tete"></span><span class="tige"></span>`);
+    const b = el("button", { class: "epingle" + (id === S.lieu ? " ici" : S.visites[id] ? " visite" : ""), style: `left:${l.x}%;top:${l.y}%`, "aria-label": l.nom, "data-id": id, on: { click: () => allerA(id) } }, `<span class="nom">${l.nom}</span><span class="tete"></span><span class="tige"></span>`);
     ep.appendChild(b);
   });
   const liste = $("#lieux-connus");
   liste.innerHTML = "<h3>Adresses connues</h3>";
-  S.connus.forEach(id => { const l = D.lieux[id]; liste.appendChild(el("button", { class: "lieu-ligne", on: { click: () => allerA(id) } }, `<b>${l.nom}${id === S.lieu ? " · vous êtes ici" : ""}</b><span>${l.adresse || l.quartier}</span>`)); });
+  S.connus.forEach(id => { const l = D.lieux[id]; liste.appendChild(el("button", { class: "lieu-ligne", on: { click: () => allerA(id), mouseenter: () => $(`.epingle[data-id="${id}"]`)?.classList.add("survol"), mouseleave: () => $(`.epingle[data-id="${id}"]`)?.classList.remove("survol"), focus: () => $(`.epingle[data-id="${id}"]`)?.classList.add("survol"), blur: () => $(`.epingle[data-id="${id}"]`)?.classList.remove("survol") } }, `<b>${l.nom}${id === S.lieu ? " · vous êtes ici" : ""}</b><span>${l.adresse || l.quartier}</span>`)); });
   requestAnimationFrame(() => { if (!carte.init) { carte.init = true; const l = D.lieux[S.lieu || "baker"]; centrerSur(42, 52); } borner(); appliquerCarte(); });
 }
 
 $("#form-aller").addEventListener("submit", e => {
   e.preventDefault();
-  const q = norm($("#aller").value), ret = $("#aller-retour");
-  if (q.length < 3) { ret.textContent = "Le cocher attend une adresse un peu plus précise."; return; }
+  const q = norm($("#aller").value);
+  if (q.length < 3) { toast("Le cocher attend une adresse un peu plus précise."); return; }
   let trouves = Object.keys(D.lieux).filter(id => (D.lieux[id].cles || []).some(k => new RegExp("(^| )" + norm(k)).test(q)));
-  if (!trouves.length && /(^| )lamb/.test(q)) trouves = ["gaskell", "lamb"];
-  if (!trouves.length) { ret.textContent = "« Connais pas, m'sieur », dit le cocher. Aucune adresse utile ne correspond. Vérifiez l'orthographe, ou cherchez dans l'annuaire."; return; }
+  if (!trouves.length) for (const a of D.ambigus || []) if (new RegExp("(^| )" + a.motif).test(q)) trouves = a.lieux;
+  if (!trouves.length) { toast("« Connais pas, m'sieur », dit le cocher. Aucune adresse utile ne correspond. Vérifiez l'orthographe, ou cherchez dans l'annuaire."); return; }
+  $("#aller").value = "";
   if (trouves.length > 1) {
-    ret.innerHTML = "Le cocher hésite : ";
-    trouves.forEach(id => ret.appendChild(el("button", { class: "btn", style: "margin:4px 6px;font-size:17px;padding:4px 12px", on: { click: () => { ret.textContent = ""; allerA(id); } } }, D.lieux[id].nom)));
+    fenetre(`<h2>Le cocher hésite</h2><p class="lieu-texte">« Laquelle, m'sieur ? »</p><div class="cases" id="choix-cocher"></div>`, z => {
+      trouves.forEach(id => z.querySelector("#choix-cocher").appendChild(el("button", { class: "case case-papier", on: { click: () => { fermerFenetre(); allerA(id); } } }, `<b>${D.lieux[id].nom}</b><span>${D.lieux[id].adresse || ""}</span>`)));
+      z.querySelector(".case").focus();
+    });
     return;
   }
-  ret.textContent = ""; $("#aller").value = ""; allerA(trouves[0]);
+  allerA(trouves[0]);
 });
 
 function allerA(id) {
@@ -169,7 +198,7 @@ function allerA(id) {
 }
 
 // ---------- Lieu
-function photo(src, legende) { return `<figure class="photo-ancienne"><img src="${src}" alt="" onerror="this.closest('figure').style.display='none'"><figcaption>${legende}</figcaption></figure>`; }
+function photo(src, legende) { return `<figure class="photo-ancienne"><img src="${src}" alt="Photographie : ${legende}" onerror="const f=this.closest('figure');f.parentElement.classList.add('sans-photo');f.remove()"><figcaption>${legende}</figcaption></figure>`; }
 function afficherLieu(arrivee) {
   const v = $("#vue-lieu"), l = D.lieux[S.lieu]; if (!l) return;
   if (arrivee && l.donne) donner(l.donne);
@@ -218,8 +247,21 @@ function examiner(pt) {
 }
 
 // ---------- Fenêtre
-function fenetre(html, apres) { $("#fenetre-contenu").innerHTML = html; $("#fenetre").hidden = false; $(".fenetre-boite").scrollTop = 0; if (apres) apres($("#fenetre-contenu")); }
-function fermerFenetre() { $("#fenetre").hidden = true; const a = $("#fenetre-contenu audio"); if (a) a.pause(); }
+let declencheur = null;
+function inerte(oui) { ["#jeu", "#accueil", "#regles", "#prologue"].forEach(sel => { $(sel).inert = oui; }); }
+function fenetre(html, apres) {
+  if ($("#fenetre").hidden) declencheur = document.activeElement;
+  $("#fenetre-contenu").innerHTML = html; $("#fenetre").hidden = false; inerte(true); $(".fenetre-boite").scrollTop = 0;
+  const t = $("#fenetre-contenu h2"); if (t) t.id = "fenetre-titre";
+  $("#fenetre-fermer").focus();
+  if (apres) apres($("#fenetre-contenu"));
+}
+function fermerFenetre() {
+  if ($("#fenetre").hidden) return;
+  $("#fenetre").hidden = true; const a = $("#fenetre-contenu audio"); if (a) a.pause();
+  if ($("#visionneuse").hidden) inerte(false);
+  if (declencheur && document.contains(declencheur)) declencheur.focus();
+}
 $("#fenetre-fermer").addEventListener("click", fermerFenetre);
 $("#fenetre").addEventListener("click", e => { if (e.target.id === "fenetre") fermerFenetre(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("#visionneuse").hidden) fermerVis(); else fermerFenetre(); } });
@@ -235,9 +277,15 @@ function ficheTemoin(id, surPlace) {
       if (o === "dep") zone.innerHTML = p.depose;
       if (o === "obs") zone.innerHTML = "<p class='role'>Holmes l'examine en silence, puis vous glisse à l'oreille :</p><ul class='observations'>" + p.observer.map(x => `<li>${x}</li>`).join("") + "</ul>";
       if (o === "mon") {
-        zone.innerHTML = "<p>Quelle pièce lui montrez-vous ?</p>";
-        const c = el("div", { class: "choix-pieces" });
-        S.docs.forEach(did => c.appendChild(el("button", { on: { click: () => reagir(id, did, zone) } }, D.documents[did].titre)));
+        zone.innerHTML = "<p>Quelle pièce lui montrez-vous ? <span class='role'>(✓ : déjà montrée à ce témoin)</span></p>";
+        const deja = (S.montres && S.montres[id]) || [], groupes = {};
+        S.docs.forEach(did => { const o = (S.origine && S.origine[did]) || "Baker Street"; (groupes[o] = groupes[o] || []).push(did); });
+        const c = el("div", { class: "choix-groupes" });
+        Object.entries(groupes).forEach(([o, ids]) => {
+          c.appendChild(el("h4", {}, o)); const g = el("div", { class: "choix-pieces" });
+          ids.forEach(did => { const d = D.documents[did]; g.appendChild(el("button", { class: deja.includes(did) ? "montre" : "", on: { click: () => reagir(id, did, zone) } }, (d.audio ? `<span class="mini cyl"></span>` : `<img class="mini" src="${d.fichier}" alt="">`) + `<span>${d.titre}</span>`)); });
+          c.appendChild(g);
+        });
         zone.appendChild(c);
       }
     };
@@ -248,6 +296,7 @@ function ficheTemoin(id, surPlace) {
 function reagir(pid, did, zone) {
   const p = D.personnages[pid]; let r = (p.reactions || {})[did];
   let texte = r ? (typeof r === "string" ? r : r.texte) : (p.defaut || "Il examine la pièce et vous la rend. « Je ne vois pas ce que vous voulez dire. »");
+  S.montres = S.montres || {}; S.montres[pid] = S.montres[pid] || []; if (!S.montres[pid].includes(did)) S.montres[pid].push(did); sauver();
   zone.innerHTML = `<p class="role">Vous lui montrez : ${D.documents[did].titre}</p><div class="reaction">${texte}</div>`;
   zone.appendChild(el("button", { class: "btn", style: "margin-top:16px", on: { click: () => zone.closest(".fiche-temoin").querySelector('[data-o="mon"]').click() } }, "Montrer autre chose"));
   if (r && r.donne) donner(r.donne);
@@ -289,16 +338,21 @@ function ouvrirDoc(id) {
       a.addEventListener("ended", () => { ph.classList.remove("tourne"); if (sonActif) fondu(ambCourante, .55, 1200); });
     });
   }
-  const img = $("#vis-img"); img.classList.remove("miroir");
-  $("#vis-titre").textContent = d.titre; $("#visionneuse").hidden = false;
-  img.onload = () => { const zone = $("#vis-zone"); vis.nat = img.naturalWidth; vis.z = Math.min(1, (zone.clientWidth - 60) / img.naturalWidth); img.style.width = img.naturalWidth * vis.z + "px"; zone.scrollTop = 0; };
+  const img = $("#vis-img"); img.classList.remove("miroir"); $("#vis-miroir").setAttribute("aria-pressed", "false");
+  if ($("#visionneuse").hidden) vis.decl = document.activeElement;
+  $("#vis-titre").textContent = d.titre; img.alt = "Document : " + d.titre; $("#visionneuse").hidden = false; inerte(true); document.body.classList.add("vis-ouverte");
+  $("#vis-fermer").focus();
+  img.onload = () => { vis.nat = img.naturalWidth; ajuster(); };
   img.src = d.fichier;
 }
-function zoomVis(f) { vis.z = Math.min(2.5, Math.max(.15, vis.z * f)); $("#vis-img").style.width = vis.nat * vis.z + "px"; }
+function zoomVis(f) { vis.z = Math.min(2.5, Math.max(.15, vis.z * f)); $("#vis-img").style.width = vis.nat * vis.z + "px"; $("#vis-pc").textContent = Math.round(vis.z * 100) + " %"; }
+function ajuster() { const zone = $("#vis-zone"); vis.z = Math.min(1, (zone.clientWidth - 60) / vis.nat); zoomVis(1); zone.scrollTop = 0; }
+$("#vis-ajuster").addEventListener("click", ajuster);
 $("#vis-plus").addEventListener("click", () => zoomVis(1.25));
 $("#vis-moins").addEventListener("click", () => zoomVis(.8));
-$("#vis-miroir").addEventListener("click", () => $("#vis-img").classList.toggle("miroir"));
-function fermerVis() { $("#visionneuse").hidden = true; }
+$("#vis-miroir").addEventListener("click", () => { const m = $("#vis-img").classList.toggle("miroir"); $("#vis-miroir").setAttribute("aria-pressed", m); });
+function fermerVis() { $("#visionneuse").hidden = true; document.body.classList.remove("vis-ouverte"); if ($("#fenetre").hidden) inerte(false); if (vis.decl && document.contains(vis.decl)) vis.decl.focus(); }
+document.addEventListener("keydown", e => { if ($("#visionneuse").hidden) return; if (e.key === "+" || e.key === "=") zoomVis(1.25); if (e.key === "-") zoomVis(.8); if (e.key === "m") $("#vis-miroir").click(); });
 $("#vis-fermer").addEventListener("click", fermerVis);
 const vz = $("#vis-zone"); let vg = null;
 vz.addEventListener("pointerdown", e => { vg = { x: e.clientX, y: e.clientY, l: vz.scrollLeft, t: vz.scrollTop }; vz.classList.add("glisse"); });
@@ -392,16 +446,18 @@ $("#annuaire-q").addEventListener("input", filtrerAnnuaire);
 function afficherIndices() {
   const v = $("#vue-indices"); v.innerHTML = "<h2>Indices</h2><p class='aide'>Chaque étape propose trois indices de plus en plus précis, puis sa solution. Chaque indice coûte un peu de votre score. Ne lisez que ce dont vous avez besoin.</p>";
   D.indices.forEach((p, i) => {
-    const n = S.indices[i] || 0, b = el("div", { class: "piste" }, `<h3>${p.titre}</h3>`);
+    const n = S.indices[i] || 0, pret = (p.requiert || []).every(d => S.docs.includes(d));
+    if (!pret && !n) { v.appendChild(el("div", { class: "piste fermee" }, `<h3>Étape ${i + 1}</h3><p class="aide">Pas encore utile : vous n'avez pas trouvé ce dont elle parle.</p>`)); return; }
+    const b = el("div", { class: "piste" }, `<h3>Étape ${i + 1} · ${p.titre}</h3>`);
     for (let k = 0; k < Math.min(n, 3); k++) b.appendChild(el("p", { class: "revele" }, `<b>Indice ${k + 1}.</b> ${p.niveaux[k]}`));
     if (n >= 4) b.appendChild(el("p", { class: "revele sol" }, `<b>Solution de l'étape.</b> ${p.solution}`));
     const nv = el("div", { class: "niveaux" });
     if (n < 3) nv.appendChild(el("button", { on: { click: () => { S.indices[i] = n + 1; sauver(); afficherIndices(); } } }, `Voir l'indice ${n + 1}`));
-    else if (n === 3) nv.appendChild(el("button", { class: "solution", on: { click: () => { if (confirm("Révéler la solution de cette étape ?")) { S.indices[i] = 4; sauver(); afficherIndices(); } } } }, "Révéler la solution de l'étape"));
+    else if (n === 3) nv.appendChild(el("button", { class: "solution", on: { click: async () => { if (await demander("Révéler la solution de cette étape ?", "Révéler")) { S.indices[i] = 4; sauver(); afficherIndices(); } } } }, "Révéler la solution de l'étape"));
     b.appendChild(nv); v.appendChild(b);
   });
   v.appendChild(el("div", { class: "piste" }, "<h3>Abandonner l'enquête</h3>"));
-  v.lastChild.appendChild(el("div", { class: "niveaux" })).appendChild(el("button", { class: "solution", on: { click: () => { if (confirm("Lire toute la solution ? L'enquête n'aura plus de secret.") && confirm("Vraiment ? Holmes vous regarde.")) { S.abandon = true; sauver(); afficherVerite(); } } } }, "Lire toute la solution"));
+  v.lastChild.appendChild(el("div", { class: "niveaux" })).appendChild(el("button", { class: "solution", on: { click: async () => { if (await demander("Lire toute la solution ? L'enquête n'aura plus aucun secret.", "Je veux savoir") && await demander("Vraiment ? Holmes vous regarde par-dessus sa pipe.", "Oui, tout lire", "Non, je continue")) { S.abandon = true; sauver(); afficherVerite(); } } } }, "Lire toute la solution"));
 }
 
 // ---------- Le fin mot de l'affaire
@@ -413,6 +469,12 @@ function afficherVerite() {
 function afficherConclure() {
   const v = $("#vue-conclure");
   if (S.fini) return afficherFin();
+  if (!afficherConclure.ouvert) {
+    v.innerHTML = `<div class="seuil"><h2>Conclure</h2><p class="lieu-texte">Ici, vous présentez vos conclusions à Holmes : six questions, puis le nom du coupable. Ne venez que lorsque vous pensez tenir la vérité. Une accusation fausse coûte cher.</p><button class="btn principal" id="ouvrir-conclure">Nous sommes prêts</button> <button class="btn" id="pas-pret">Pas encore</button></div>`;
+    v.querySelector("#ouvrir-conclure").addEventListener("click", () => { afficherConclure.ouvert = true; afficherConclure(); });
+    v.querySelector("#pas-pret").addEventListener("click", () => vue("carte"));
+    return;
+  }
   v.innerHTML = `<h2>Conclure</h2><p class="aide">Holmes ne revient pas sur une accusation. Ne venez ici que lorsque vous êtes sûrs de vous. Une accusation fausse vous coûtera cher, mais vous pourrez reprendre l'enquête.</p>`;
   const f = el("form", { id: "f-conclure" });
   D.deductions.forEach((d, i) => f.appendChild(el("div", { class: "question" }, `<h3>${i + 1}. ${d.q}</h3>` + d.options.map((o, k) => `<label><input type="radio" name="q${i}" value="${k}" required>${o}</label>`).join(""))));
@@ -420,7 +482,8 @@ function afficherConclure() {
   f.appendChild(el("button", { class: "btn principal" }, "Présenter vos conclusions à Holmes"));
   f.addEventListener("submit", e => {
     e.preventDefault();
-    if (!confirm("Vos conclusions sont définitives. Les présenter ?")) return;
+    afficherConclure.envoi = afficherConclure.envoi || 0;
+    if (afficherConclure.envoi++ % 2 === 0) { demander("Vos conclusions sont définitives. Les présenter à Holmes ?", "Les présenter").then(ok => { if (ok) f.requestSubmit(); else afficherConclure.envoi = 0; }); return; }
     const rep = D.deductions.map((d, i) => +f.querySelector(`[name=q${i}]:checked`).value);
     const coupable = f.querySelector("[name=coupable]:checked").value;
     const justes = rep.filter((r, i) => r === D.deductions[i].bonne).length;
@@ -431,7 +494,7 @@ function afficherConclure() {
       v.querySelector("#reprendre").addEventListener("click", () => vue("carte"));
       return;
     }
-    v.innerHTML = `<div class="epilogue page-papier"><h2>« C'est elle, Watson. »</h2><p>Holmes hoche lentement la tête. Il ne sourit pas.</p><p>« Vous avez raison. Et maintenant vient la partie de notre métier que je déteste. Nous pouvons remettre Margaret Pell à Lestrade, et elle sera pendue. Ou nous pouvons nous contenter de sauver Lionel, et laisser le brouillard faire le reste. La loi est claire. Le reste ne l'est pas. »</p><div class="choix-moral"><button data-c="condamner"><b>Condamner</b>Remettre toutes les preuves à Lestrade. Justice sera faite, selon la loi.</button><button data-c="absoudre"><b>Absoudre</b>Prouver l'innocence de Lionel, et taire le reste.</button></div></div>`;
+    v.innerHTML = `<div class="epilogue page-papier">${D.choixMoral}<div class="choix-moral"><button data-c="condamner"><b>Condamner</b>Remettre toutes les preuves à Lestrade. Justice sera faite, selon la loi.</button><button data-c="absoudre"><b>Absoudre</b>Prouver l'innocence de Lionel, et taire le reste.</button></div></div>`;
     v.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => { S.fini = { choix: b.dataset.c, rep, temps: S.temps }; sauver(); afficherFin(); }));
   });
   v.appendChild(f);
@@ -451,6 +514,6 @@ function afficherFin() {
   <button class="btn" id="rejouer">Recommencer depuis le début</button></div>`;
   parler(ep.son);
   v.querySelector("#voir-verite").addEventListener("click", afficherVerite);
-  v.querySelector("#rejouer").addEventListener("click", () => { if (confirm("Effacer cette enquête et recommencer ?")) { S = neuf(); sauver(); location.reload(); } });
+  v.querySelector("#rejouer").addEventListener("click", async () => { if (await demander("Effacer cette enquête et recommencer ?", "Recommencer")) { S = neuf(); sauver(); location.reload(); } });
 }
 })();
